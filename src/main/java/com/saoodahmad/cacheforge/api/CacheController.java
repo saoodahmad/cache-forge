@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/cache")
 public class CacheController {
-    public  Cache cache;
+    public final Cache cache;
 
     public CacheController(Cache cache) {
         this.cache = cache;
