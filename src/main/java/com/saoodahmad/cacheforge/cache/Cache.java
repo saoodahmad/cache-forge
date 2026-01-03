@@ -2,6 +2,7 @@ package com.saoodahmad.cacheforge.cache;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.sql.SQLOutput;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class Cache {
 
     ConcurrentHashMap<String, CacheEntry> store;

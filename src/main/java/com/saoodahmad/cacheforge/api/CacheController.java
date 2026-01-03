@@ -12,19 +12,20 @@ import java.util.List;
 import java.util.ArrayList;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/cache")
 public class CacheController {
+    public  Cache cache;
 
-    public final Cache cache = new Cache();
+    public CacheController(Cache cache) {
+        this.cache = cache;
+    }
 
     @PostMapping("/set")
     public ResponseEntity<?> set(@Valid @RequestBody SetRequest req, BindingResult br) {

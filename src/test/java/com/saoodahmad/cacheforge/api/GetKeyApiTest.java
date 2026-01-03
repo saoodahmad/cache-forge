@@ -18,8 +18,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureMockMvc
 public class GetKeyApiTest {
+
     @Autowired
     MockMvc mvc;
+
     private final ObjectMapper om = new ObjectMapper();
 
     private ApiResp setKey(String key, String value, long ttl, int status) throws Exception {
@@ -69,7 +71,7 @@ public class GetKeyApiTest {
         setKey("A", "A", 1, 200);
         sleepMs(1100);
 
-        ApiResp g = getKey("T", 200);
+        ApiResp g = getKey("A", 200);
         JsonNode op = assertOp(g, "GET", false, true);
         assertDataNull(op);
 

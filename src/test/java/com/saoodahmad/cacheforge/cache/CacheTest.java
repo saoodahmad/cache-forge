@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static com.saoodahmad.cacheforge.common_utils.TestUtils.*;
 
 class CacheTest {
+
     @Test
     void ttlExpiry_shouldMissAndCleanupStoreAndLru() {
         Cache cache = new Cache();
