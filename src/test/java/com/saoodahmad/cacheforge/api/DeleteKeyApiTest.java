@@ -59,7 +59,7 @@ public class DeleteKeyApiTest {
 
     @Test
     void del_blankKey_should400_withErrorResponse() throws Exception {
-        ApiResp r = deleteKey(" ",  400);
+        ApiResp r = deleteKey(" ", 400);
 
         JsonNode err = assertError(r, "INVALID_KEY");
     }
