@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cache Inspector</title>
+    <style>
+        :root { color-scheme: dark; }
+        body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b1220; color:#e5e7eb; }
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+        .grid { display: grid; grid-template-columns: 360px 1fr; gap: 14px; }
+        .card { background:#0f1a30; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+        h1 { font-size: 18px; margin: 0 0 10px; letter-spacing: 0.2px; }
+        h2 { font-size: 14px; margin: 0 0 10px; color:#cbd5e1; }
+        .row { display:flex; gap:10px; align-items: center; margin: 10px 0; }
+        label { display:block; font-size: 12px; color:#a5b4fc; margin-bottom: 6px; }
+        input { width: 100%; padding: 10px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.10); background:#0b1326; color:#e5e7eb; outline: none; }
+        input::placeholder { color: #64748b; }
+        .btns { display:flex; gap:10px; flex-wrap: wrap; }
+        button { padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.10); background:#1e293b; color:#e5e7eb; cursor:pointer; font-weight:600; }
+        button:hover { background:#24324a; }
+        button.primary { background:#2563eb; border-color:#2563eb; }
+        button.primary:hover { background:#1d4ed8; }
+        button.danger { background:#dc2626; border-color:#dc2626; }
+        button.danger:hover { background:#b91c1c; }
+        .pill { display:inline-flex; gap:8px; align-items:center; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; }
+        .kv { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono"; font-size: 12px; line-height: 1.45; white-space: pre-wrap; }
+        .muted { color:#94a3b8; }
+        .good { color:#22c55e; }
+        .bad { color:#ef4444; }
+        .warn { color:#f59e0b; }
+        table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; }
+        th, td { padding: 10px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; }
+        th { text-align: left; color:#cbd5e1; background: rgba(255,255,255,0.04); position: sticky; top: 0; }
+        tr:hover td { background: rgba(255,255,255,0.03); }
+        .lruBar { display:flex; gap:8px; flex-wrap: wrap; align-items: center; }
+        .chip { padding: 6px 10px; border-radius: 999px; background:#0b1326; border: 1px solid rgba(255,255,255,0.10); font-size: 12px; }
+        .chip.lru { border-color: rgba(239,68,68,0.55); }
+        .chip.mru { border-color: rgba(34,197,94,0.55); }
+        .topRow { display:flex; gap:10px; flex-wrap: wrap; align-items:center; justify-content: space-between; }
+        .smallBtn { padding: 8px 10px; font-size: 12px; border-radius: 10px; }
+        .log { max-height: 220px; overflow:auto; background:#0b1326; border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 10px; }
+        .logLine { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono"; font-size: 12px; padding: 6px 0; border-bottom: 1px dashed rgba(255,255,255,0.08); }
+        .logLine:last-child { border-bottom: 0; }
+        .rightCol { display:flex; flex-direction: column; gap: 14px; }
+        .hint { font-size: 12px; color:#94a3b8; line-height:1.5; }
+        .errBox { display:none; margin-top:10px; padding:10px; border-radius:12px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.30); }
+        .okBox { display:none; margin-top:10px; padding:10px; border-radius:12px; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.30); }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="topRow">
+        <h1>Cache Inspector — TTL + LRU</h1>
+        <div class="row" style="margin:0;">
+            <span class="pill"><span class="muted">Base URL</span><span class="kv" id="baseUrlText">same-origin</span></span>
+            <button class="smallBtn" id="btnRefresh">Refresh State</button>
+            <button class="smallBtn" id="btnClearLog">Clear Log</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Left: operations -->
+        <div class="card">
+            <h2>Operations</h2>
+
+            <div class="row">
+                <div style="flex:1;">
+                    <label>Key</label>
+                    <input id="key" placeholder="e.g. A" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div style="flex:1;">
+                    <label>Value</label>
+                    <input id="value" placeholder="e.g. hello" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div style="flex:1;">
+                    <label>TTL (seconds)</label>
+                    <input id="ttl" type="number" placeholder="-1 = no expiry" value="-1" />
+                </div>
+            </div>
+
+            <div class="btns" style="margin-top: 10px;">
+                <button class="primary" id="btnSet">SET</button>
+                <button id="btnGet">GET</button>
+                <button class="danger" id="btnDel">DEL</button>
+            </div>
+
+            <div class="hint" style="margin-top:12px;">
+                Rules: <span class="kv">ttl = -1</span> means no expiry, <span class="kv">ttl &gt; 0</span> expires after that many seconds.
+                Expiry is lazy (cleaned on GET/SET/DEL). LRU order shown below is <span class="kv">[LRU → MRU]</span>.
+            </div>
+
+            <div class="okBox" id="okBox"></div>
+            <div class="errBox" id="errBox"></div>
+
+            <div style="margin-top: 14px;">
+                <h2>Last Operation Result</h2>
+                <div class="card" style="padding: 10px; border-radius: 12px; background:#0b1326;">
+                    <div class="kv" id="opResult">—</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 14px;">
+                <h2>Event Log</h2>
+                <div class="log" id="log"></div>
+            </div>
+        </div>
+
+        <!-- Right: state -->
+        <div class="rightCol">
+            <div class="card">
+                <div class="topRow">
+                    <h2 style="margin:0;">LRU Order</h2>
+                    <span class="pill"><span class="muted">Capacity</span><span class="kv" id="capText">—</span></span>
+                </div>
+                <div class="row" style="justify-content: space-between;">
+                    <span class="muted" style="font-size:12px;">LRU</span>
+                    <span class="muted" style="font-size:12px;">MRU</span>
+                </div>
+                <div class="lruBar" id="lruBar"></div>
+            </div>
+
+            <div class="card">
+                <div class="topRow">
+                    <h2 style="margin:0;">Keys</h2>
+                    <span class="pill"><span class="muted">Count</span><span class="kv" id="countText">—</span></span>
+                </div>
+                <div style="max-height: 360px; overflow:auto; margin-top:10px;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th style="width: 22%;">Key</th>
+                            <th style="width: 38%;">Value</th>
+                            <th style="width: 20%;">TTL</th>
+                            <th style="width: 20%;">Expired</th>
+                        </tr>
+                        </thead>
+                        <tbody id="keysTbody">
+                        <tr><td colspan="4" class="muted">No data yet. Click “Refresh State”.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="hint" style="margin-top:10px;">
+                    Note: because expiry is lazy, expired keys  remains in cache until touched (GET/SET/DEL) or evicted.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // If you serve this from Spring Boot static resources, same-origin works.
+    // If UI is hosted elsewhere, set BASE_URL like: const BASE_URL = "http://localhost:8080";
+    const BASE_URL = ""; // same-origin
+    document.getElementById("baseUrlText").textContent = BASE_URL === "" ? "same-origin" : BASE_URL;
+
+    const el = (id) => document.getElementById(id);
+
+    function nowTs() {
+      const d = new Date();
+      return d.toLocaleString();
+    }
+
+    function showOk(msg) {
+      const box = el("okBox");
+      box.style.display = "block";
+      box.textContent = msg;
+      setTimeout(() => box.style.display = "none", 2200);
+    }
+
+    function showErr(msg) {
+      const box = el("errBox");
+      box.style.display = "block";
+      box.textContent = msg;
+    }
+
+    function clearErr() {
+      const box = el("errBox");
+      box.style.display = "none";
+      box.textContent = "";
+    }
+
+    function log(line) {
+      const container = el("log");
+      const div = document.createElement("div");
+      div.className = "logLine";
+      div.textContent = `[${nowTs()}] ${line}`;
+      container.prepend(div);
+    }
+
+    function fmtTtl(ttl) {
+      if (ttl === -1) return "∞ (-1)";
+      return `${ttl}s`;
+    }
+
+    function renderOpResult(obj) {
+      if (!obj) { el("opResult").textContent = "—"; return; }
+      el("opResult").textContent = JSON.stringify(obj, null, 2);
+    }
+
+    function opSummary(out) {
+      // CacheOperationOutput: { opType, hit, miss, data }
+      const op = out?.opType ?? "UNKNOWN";
+      const hit = out?.hit === true;
+      const miss = out?.miss === true;
+      const val = out?.data?.val ?? out?.data?.value ?? null; // depending on your JSON
+      const ttl = out?.data?.expiry ?? null;
+
+      const hm = hit ? "HIT" : (miss ? "MISS" : "—");
+      if (val !== null && ttl !== null) return `${op} ${hm} data(value=${val}, ttl=${ttl})`;
+      if (val !== null) return `${op} ${hm} data(value=${val})`;
+      return `${op} ${hm}`;
+    }
+
+    async function api(method, path, body) {
+      clearErr();
+      const url = `${BASE_URL}${path}`;
+      const init = { method, headers: { "Content-Type": "application/json" } };
+      if (body !== undefined) init.body = JSON.stringify(body);
+
+      let res;
+      try {
+        res = await fetch(url, init);
+      } catch (e) {
+        showErr(`Network error calling ${method} ${path}: ${e?.message ?? e}`);
+        throw e;
+      }
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        showErr(`HTTP ${res.status} on ${method} ${path}${txt ? `: ${txt}` : ""}`);
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      // Some endpoints might return empty; assume JSON here
+      return await res.json();
+    }
+
+    async function refreshState() {
+      const state = await api("GET", "/api/cache/state");
+      renderState(state);
+      showOk("State refreshed");
+      log("STATE refreshed");
+    }
+
+    function renderState(state) {
+      el("capText").textContent = String(state?.capacity ?? "—");
+      const keys = Array.isArray(state?.keys) ? state.keys : [];
+      const lru = Array.isArray(state?.lru) ? state.lru : [];
+
+      el("countText").textContent = String(keys.length);
+
+      // Keys table
+      const tbody = el("keysTbody");
+      tbody.innerHTML = "";
+      if (keys.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.className = "muted";
+        td.textContent = "No keys";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      } else {
+        for (const k of keys) {
+          const tr = document.createElement("tr");
+          const tdKey = document.createElement("td");
+          const tdVal = document.createElement("td");
+          const tdTtl = document.createElement("td");
+          const tdExp = document.createElement("td");
+
+          tdKey.textContent = k.key ?? "";
+          tdVal.textContent = k.value ?? "";
+          tdTtl.textContent = fmtTtl(k.ttl ?? -1);
+
+          const expired = k.expired === true;
+          tdExp.innerHTML = expired ? `<span class="bad">true</span>` : `<span class="good">false</span>`;
+
+          tr.appendChild(tdKey);
+          tr.appendChild(tdVal);
+          tr.appendChild(tdTtl);
+          tr.appendChild(tdExp);
+          tbody.appendChild(tr);
+        }
+      }
+
+      // LRU bar
+      const bar = el("lruBar");
+      bar.innerHTML = "";
+      if (lru.length === 0) {
+        const span = document.createElement("span");
+        span.className = "muted";
+        span.textContent = "No keys in LRU";
+        bar.appendChild(span);
+      } else {
+        lru.forEach((key, idx) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          if (idx === 0) chip.classList.add("lru");
+          if (idx === lru.length - 1) chip.classList.add("mru");
+          chip.textContent = key;
+
+          chip.title = idx === 0 ? "LRU (eviction victim)" : (idx === lru.length - 1 ? "MRU (most recent)" : "Middle");
+          bar.appendChild(chip);
+        });
+      }
+    }
+
+    async function doSet() {
+      const key = el("key").value.trim();
+      const value = el("value").value;
+      const ttl = Number(el("ttl").value);
+
+      if (!key) { showErr("Key is required"); return; }
+      if (!(ttl === -1 || ttl > 0)) { showErr("TTL must be -1 or > 0"); return; }
+
+      const out = await api("POST", "/api/cache/set", { key, value, ttl });
+      renderOpResult(out);
+      log(opSummary(out));
+
+      // refresh state to update keys + LRU
+      await refreshState();
+    }
+
+    async function doGet() {
+      const key = el("key").value.trim();
+      if (!key) { showErr("Key is required"); return; }
+
+      const out = await api("GET", `/cache/get/${encodeURIComponent(key)}`);
+      renderOpResult(out);
+      log(opSummary(out));
+
+      await refreshState();
+    }
+
+    async function doDel() {
+      const key = el("key").value.trim();
+      if (!key) { showErr("Key is required"); return; }
+
+      const out = await api("DELETE", `/api/cache/del/${encodeURIComponent(key)}`);
+      renderOpResult(out);
+      log(opSummary(out));
+
+      await refreshState();
+    }
+
+    // Wire buttons
+    el("btnSet").addEventListener("click", () => doSet().catch(()=>{}));
+    el("btnGet").addEventListener("click", () => doGet().catch(()=>{}));
+    el("btnDel").addEventListener("click", () => doDel().catch(()=>{}));
+    el("btnRefresh").addEventListener("click", () => refreshState().catch(()=>{}));
+    el("btnClearLog").addEventListener("click", () => el("log").innerHTML = "");
+
+    // Initial load
+    refreshState().catch(()=>{});
+</script>
+</body>
+</html>
