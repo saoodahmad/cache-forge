@@ -91,16 +91,4 @@ public class GetKeyApiTest {
         assertEquals("B", dataVal(op));
         assertEquals(100, dataTtl(op));
     }
-
-    @Test
-    void overwrite_shouldHit_whenNotExpired_andRefreshTtl() throws Exception {
-        setKey("X", "X", 2, 200);
-
-        ApiResp s2 = setKey("X", "X2", 3, 200);
-        JsonNode op = assertOp(s2, "SET", true, false);
-        assertDataPresent(op);
-
-        assertEquals("X2", dataVal(op));
-        assertEquals(3, dataTtl(op));
-    }
 }

@@ -64,6 +64,18 @@ public class SetKeyApiTest {
     }
 
     @Test
+    void overwrite_shouldHit_whenNotExpired_andRefreshTtl() throws Exception {
+        setKey("A", "A", 2, 200);
+
+        ApiResp s2 = setKey("A", "A2", 3, 200);
+        JsonNode op = assertOp(s2, "SET", true, false);
+        assertDataPresent(op);
+
+        assertEquals("A2", dataVal(op));
+        assertEquals(3, dataTtl(op));
+    }
+
+    @Test
     void set_newKey_should200_andReturnOpOutput_withLatestData() throws Exception {
         ApiResp r = setKey("B", "B", -1, 200);
 
