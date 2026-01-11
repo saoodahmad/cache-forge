@@ -1,4 +1,4 @@
-package com.saoodahmad.cacheforge.cache;
+package com.saoodahmad.cacheforge.cache.model;
 
 public class CacheEntry{
 
@@ -14,14 +14,15 @@ public class CacheEntry{
     private long expiresAt;
 
 
-    CacheEntry (String val, long ttlInSecs) {
+    public CacheEntry (String val, long ttlInSecs, long nowMs) {
         this.val = val;
         this.ttlInSecs = ttlInSecs;
 
         if(ttlInSecs == -1) {
             this.expiresAt = -1;
         }else {
-            this.expiresAt = System.currentTimeMillis() + ttlInSecs * 1000;
+            long ttlMs = Math.multiplyExact(ttlInSecs, 1000L);
+            this.expiresAt = Math.addExact(nowMs, ttlMs);
         }
     }
 
@@ -34,25 +35,26 @@ public class CacheEntry{
         this.val = newVal;
     }
 
-    public long getExpiry () {
+    public long getTtlInSecs () {
         return this.ttlInSecs;
     }
 
-    public void updateExpiry(long expiryInSec) {
-        this.ttlInSecs = expiryInSec;
-        if(expiryInSec == -1) {
+    public void setTtlSeconds(long ttlInSecs, long nowMs) {
+        this.ttlInSecs = ttlInSecs;
+        if(ttlInSecs == -1) {
             this.expiresAt = -1;
         }else {
-            this.expiresAt = System.currentTimeMillis() + expiryInSec * 1000;
+            long ttlMs = Math.multiplyExact(ttlInSecs, 1000L);
+            this.expiresAt = Math.addExact(nowMs, ttlMs);
         }
     }
 
-    public boolean isKeyExpired() {
+    public boolean isKeyExpired(long nowMs) {
         if (this.expiresAt == -1) {
             return false;
         }
 
-        return System.currentTimeMillis() >= this.expiresAt;
+        return nowMs >= this.expiresAt;
     }
 
     public String toString() {

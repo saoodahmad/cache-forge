@@ -4,13 +4,14 @@ import com.saoodahmad.cacheforge.api.dtos.CacheEntryDto;
 import com.saoodahmad.cacheforge.api.dtos.CacheStateResponse;
 import com.saoodahmad.cacheforge.api.dtos.ErrorResponse;
 import com.saoodahmad.cacheforge.api.dtos.SetRequest;
-import com.saoodahmad.cacheforge.cache.Cache;
-import com.saoodahmad.cacheforge.cache.CacheEntry;
-import com.saoodahmad.cacheforge.cache.CacheOperationOutput;
+import com.saoodahmad.cacheforge.cache.api.CacheApi;
+import com.saoodahmad.cacheforge.cache.api.CacheOperationOutput;
+import com.saoodahmad.cacheforge.cache.model.CacheEntry;
 
 import java.util.List;
 import java.util.ArrayList;
 
+import com.saoodahmad.cacheforge.cache.time.TimeProvider;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +22,13 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/cache")
 public class CacheController {
-    public final Cache cache;
+    public final CacheApi cacheApi;
 
-    public CacheController(Cache cache) {
-        this.cache = cache;
+    private final TimeProvider time;
+
+    public CacheController(CacheApi cacheApi, TimeProvider time) {
+        this.cacheApi = cacheApi;
+        this.time = time;
     }
 
     @PostMapping("/set")
@@ -67,7 +71,7 @@ public class CacheController {
                     .body(new ErrorResponse("INVALID_TTL", "ttl must be -1 or > 0"));
         }
 
-        CacheOperationOutput output =  cache.setKey(req.key.trim(), req.value.trim(), req.ttl);
+        CacheOperationOutput output =  cacheApi.setKey(req.key.trim(), req.value.trim(), req.ttl);
 
         System.out.println(output);
 
@@ -92,7 +96,7 @@ public class CacheController {
 
         }
 
-        CacheOperationOutput output = cache.getKey(key.trim());
+        CacheOperationOutput output = cacheApi.getKey(key.trim());
 
         System.out.println(output);
 
@@ -117,7 +121,7 @@ public class CacheController {
         }
 
 
-        CacheOperationOutput output =  cache.deleteKey(key.trim());
+        CacheOperationOutput output =  cacheApi.deleteKey(key.trim());
 
         System.out.println(output);
 
@@ -127,20 +131,20 @@ public class CacheController {
     @GetMapping("/state")
     public ResponseEntity<?> state() {
         CacheStateResponse resp = new CacheStateResponse();
-        resp.capacity = cache.cacheCapacity();
+        resp.capacity = cacheApi.cacheCapacity();
 
         List<CacheEntryDto> entries = new ArrayList<>();
 
-        for (String key : cache.snapshotKeys()) {
-            CacheEntry entry = cache.getKeyDirectlyFromStore(key);
+        for (String key : cacheApi.snapshotKeys()) {
+            CacheEntry entry = cacheApi.getKeyDirectlyFromStore(key);
 
             if (entry != null) {
-                entries.add(new CacheEntryDto(key, entry));
+                entries.add(new CacheEntryDto(key, entry, time.nowMs()));
             }
         }
 
         resp.keys = entries;
-        resp.lru = cache.snapshotLRU();
+        resp.lru = cacheApi.snapshotLRU();
 
         System.out.println("State fetched successfully");
 

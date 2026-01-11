@@ -37,23 +37,11 @@ public class DeleteKeyApiTest {
         );
     }
 
-    private ApiResp getKey(String key, int status) throws Exception {
-        return callJson(mvc, om,
-                get("/api/cache/get/{key}", key),
-                status
-        );
-    }
+
 
     private ApiResp deleteKey(String key, int status) throws Exception {
         return callJson(mvc, om,
                 delete("/api/cache/del/{key}", key),
-                status
-        );
-    }
-
-    private ApiResp state(int status) throws Exception {
-        return callJson(mvc, om,
-                get("/api/cache/state"),
                 status
         );
     }

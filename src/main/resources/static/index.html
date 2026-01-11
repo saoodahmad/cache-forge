@@ -332,7 +332,7 @@
       const key = el("key").value.trim();
       if (!key) { showErr("Key is required"); return; }
 
-      const out = await api("GET", `/cache/get/${encodeURIComponent(key)}`);
+      const out = await api("GET", `/api/cache/get/${encodeURIComponent(key)}`);
       renderOpResult(out);
       log(opSummary(out));
 

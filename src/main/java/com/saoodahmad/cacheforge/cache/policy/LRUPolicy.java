@@ -1,4 +1,4 @@
-package com.saoodahmad.cacheforge.cache;
+package com.saoodahmad.cacheforge.cache.policy;
 
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -97,6 +97,6 @@ public final class ApiTestUtils {
     }
 
     public static long dataTtl(JsonNode opBody) {
-        return opBody.get("data").get("expiry").asLong();
+        return opBody.get("data").get("ttlInSecs").asLong();
     }
 }
