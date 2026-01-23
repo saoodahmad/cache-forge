@@ -20,10 +20,12 @@ public class StateApiTest {
 
     @Autowired
     MockMvc mvc;
+
     private final ObjectMapper om = new ObjectMapper();
 
     private ApiResp setKey(String key, String value, long ttl, int status) throws Exception {
         String body = om.createObjectNode()
+                .put("namespace", "N1")
                 .put("key", key)
                 .put("value", value)
                 .put("ttl", ttl)
@@ -37,7 +39,7 @@ public class StateApiTest {
 
     private ApiResp getKey(String key, int status) throws Exception {
         return callJson(mvc, om,
-                get("/api/cache/get/{key}", key),
+                get("/api/cache/get/N1/{key}", key),
                 status
         );
     }

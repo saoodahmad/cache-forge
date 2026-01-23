@@ -2,6 +2,9 @@ package com.saoodahmad.cacheforge.api.dtos;
 
 import jakarta.validation.constraints.NotBlank;
 public class SetRequest {
+    @NotBlank(message = "Namespace cannot be blank")
+    public  String namespace;
+
     @NotBlank(message = "Key cannot be blank")
     public String key;
 

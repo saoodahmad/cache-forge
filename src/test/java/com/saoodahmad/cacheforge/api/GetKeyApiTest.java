@@ -18,12 +18,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureMockMvc
 public class GetKeyApiTest {
+
     @Autowired
     MockMvc mvc;
+
     private final ObjectMapper om = new ObjectMapper();
 
     private ApiResp setKey(String key, String value, long ttl, int status) throws Exception {
         String body = om.createObjectNode()
+                .put("namespace", "N1")
                 .put("key", key)
                 .put("value", value)
                 .put("ttl", ttl)
@@ -31,29 +34,26 @@ public class GetKeyApiTest {
 
         return callJson(mvc, om,
                 post("/api/cache/set").content(body),
-                status
-        );
+                status);
     }
 
     private ApiResp getKey(String key, int status) throws Exception {
         return callJson(mvc, om,
-                get("/api/cache/get/{key}", key),
-                status
-        );
+                get("/api/cache/get/N1/{key}", key),
+                status);
     }
 
     private ApiResp state(int status) throws Exception {
         return callJson(mvc, om,
                 get("/api/cache/state"),
-                status
-        );
+                status);
     }
 
     @Test
     void get_blankKey_should400_withErrorResponse() throws Exception {
-        ApiResp r = getKey(" ",  400);
+        ApiResp r = getKey(" ", 400);
 
-        JsonNode err = assertError(r, "INVALID_KEY");
+        assertError(r, "INVALID_KEY");
     }
 
     @Test
@@ -69,7 +69,7 @@ public class GetKeyApiTest {
         setKey("A", "A", 1, 200);
         sleepMs(1100);
 
-        ApiResp g = getKey("T", 200);
+        ApiResp g = getKey("A", 200);
         JsonNode op = assertOp(g, "GET", false, true);
         assertDataNull(op);
 
@@ -88,17 +88,5 @@ public class GetKeyApiTest {
 
         assertEquals("B", dataVal(op));
         assertEquals(100, dataTtl(op));
-    }
-
-    @Test
-    void overwrite_shouldHit_whenNotExpired_andRefreshTtl() throws Exception {
-        setKey("X", "X", 2, 200);
-
-        ApiResp s2 = setKey("X", "X2", 3, 200);
-        JsonNode op = assertOp(s2, "SET", true, false);
-        assertDataPresent(op);
-
-        assertEquals("X2", dataVal(op));
-        assertEquals(3, dataTtl(op));
     }
 }

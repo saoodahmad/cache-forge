@@ -21,10 +21,12 @@ public class DeleteKeyApiTest {
 
     @Autowired
     MockMvc mvc;
+
     private final ObjectMapper om = new ObjectMapper();
 
     private ApiResp setKey(String key, String value, long ttl, int status) throws Exception {
         String body = om.createObjectNode()
+                .put("namespace", "N1")
                 .put("key", key)
                 .put("value", value)
                 .put("ttl", ttl)
@@ -32,45 +34,27 @@ public class DeleteKeyApiTest {
 
         return callJson(mvc, om,
                 post("/api/cache/set").content(body),
-                status
-        );
-    }
-
-    private ApiResp getKey(String key, int status) throws Exception {
-        return callJson(mvc, om,
-                get("/api/cache/get/{key}", key),
-                status
-        );
+                status);
     }
 
     private ApiResp deleteKey(String key, int status) throws Exception {
         return callJson(mvc, om,
-                delete("/api/cache/del/{key}", key),
-                status
-        );
-    }
-
-    private ApiResp state(int status) throws Exception {
-        return callJson(mvc, om,
-                get("/api/cache/state"),
-                status
-        );
+                delete("/api/cache/del/N1/{key}", key),
+                status);
     }
 
     @Test
     void del_blankKey_should400_withErrorResponse() throws Exception {
-        ApiResp r = deleteKey(" ",  400);
+        ApiResp r = deleteKey(" ", 400);
 
-        JsonNode err = assertError(r, "INVALID_KEY");
+        assertError(r, "INVALID_KEY");
     }
-
 
     @Test
     void del_missingKey_should200_miss_nullData() throws Exception {
         ApiResp r = deleteKey("NON_EXISTENT_KEY", 200);
 
-        JsonNode op = assertOp(r, "DELETE"
-                , false, true);
+        JsonNode op = assertOp(r, "DELETE", false, true);
         assertDataNull(op);
     }
 
@@ -81,8 +65,7 @@ public class DeleteKeyApiTest {
 
         ApiResp r = deleteKey("A", 200);
 
-        JsonNode op = assertOp(r, "DELETE"
-                , false, true);
+        JsonNode op = assertOp(r, "DELETE", false, true);
         assertDataNull(op);
     }
 
@@ -92,8 +75,7 @@ public class DeleteKeyApiTest {
 
         ApiResp r = deleteKey("B", 200);
 
-        JsonNode op = assertOp(r, "DELETE"
-                , true, false);
+        JsonNode op = assertOp(r, "DELETE", true, false);
 
         assertDataPresent(op);
 

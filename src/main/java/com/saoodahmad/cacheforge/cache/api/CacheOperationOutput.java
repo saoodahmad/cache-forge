@@ -1,5 +1,8 @@
-package com.saoodahmad.cacheforge.cache;
+package com.saoodahmad.cacheforge.cache.api;
 
+
+import com.saoodahmad.cacheforge.cache.OperationType;
+import com.saoodahmad.cacheforge.cache.model.CacheEntry;
 
 public class CacheOperationOutput {
 
@@ -11,7 +14,7 @@ public class CacheOperationOutput {
 
     public CacheEntry data;
 
-    CacheOperationOutput(OperationType opType, boolean hit, boolean miss, CacheEntry data) {
+    public CacheOperationOutput(OperationType opType, boolean hit, boolean miss, CacheEntry data) {
         this.opType = opType;
         this.hit = hit;
         this.miss = miss;

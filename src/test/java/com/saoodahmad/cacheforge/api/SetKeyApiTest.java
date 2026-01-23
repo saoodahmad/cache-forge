@@ -20,10 +20,12 @@ public class SetKeyApiTest {
 
     @Autowired
     MockMvc mvc;
+
     private final ObjectMapper om = new ObjectMapper();
 
     private ApiResp setKey(String key, String value, long ttl, int status) throws Exception {
         String body = om.createObjectNode()
+                .put("namespace", "N1")
                 .put("key", key)
                 .put("value", value)
                 .put("ttl", ttl)
@@ -31,23 +33,14 @@ public class SetKeyApiTest {
 
         return callJson(mvc, om,
                 post("/api/cache/set").content(body),
-                status
-        );
-    }
-
-
-    private ApiResp state(int status) throws Exception {
-        return callJson(mvc, om,
-                get("/api/cache/state"),
-                status
-        );
+                status);
     }
 
     @Test
     void set_blankKey_should400_withErrorResponse() throws Exception {
         ApiResp r = setKey("   ", "V", -1, 400);
 
-        JsonNode err = assertError(r, "INVALID_KEY");
+        assertError(r, "INVALID_KEY");
     }
 
     @Test
@@ -60,6 +53,18 @@ public class SetKeyApiTest {
     void set_blankVal_should400_withErrorResponse() throws Exception {
         ApiResp r = setKey("A", " ", 0, 400);
         assertError(r, "INVALID_VALUE");
+    }
+
+    @Test
+    void overwrite_shouldHit_whenNotExpired_andRefreshTtl() throws Exception {
+        setKey("A", "A", 2, 200);
+
+        ApiResp s2 = setKey("A", "A2", 3, 200);
+        JsonNode op = assertOp(s2, "SET", true, false);
+        assertDataPresent(op);
+
+        assertEquals("A2", dataVal(op));
+        assertEquals(3, dataTtl(op));
     }
 
     @Test
